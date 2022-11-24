@@ -1,25 +1,63 @@
-document.addEventListener('click', (e) => {
-  if (e.target.dataset.type === 'remove') {
-    const id = e.target.dataset.id
+document.addEventListener('click', ({ target }) => {
+  const currentEl = target.closest('li')
+  const type = target.dataset.type
+  if (type === 'update') {
+    visibleCurrentEl(currentEl)
+    hiddenNextEl(currentEl)
+  }
+  if (type === 'remove') {
+    const id = target.dataset.id
     remove(id).then(() => {
-      e.target.closest('li').remove()
+      target.closest('li').remove()
     })
   }
-})
-document.addEventListener('click', ({ target }) => {
-  if (target.dataset.type === 'edit') {
-    const title = target.closest('li').querySelector('span').textContent
-    const newTitle = prompt('Введите новое название', title)
-    if (newTitle !== title && newTitle !== null) {
-      const id = target.dataset.id
-      update(id, newTitle).then(() => {
-        target.closest('li').querySelector('span').textContent = newTitle
-      })
-    } else {
-      return
-    }
+  if (type === 'edit') {
+    const id = target.dataset.id
+    editTitle(id, currentEl)
+  }
+  if (type === 'cancel') {
+    visibleCurrentEl(currentEl)
+    hiddenPrevEl(currentEl)
   }
 })
+
+function editTitle(id, currentEl) {
+  const currentTitle = currentEl.previousElementSibling.querySelector('span').textContent
+  newTitle = currentEl.querySelector('input').value.trim()
+  if (newTitle === '' || newTitle === null) {
+    alert('Обновлённое название задачи не может быть пустым')
+    return
+  }
+  if (currentTitle === newTitle) {
+    visibleCurrentEl(currentEl)
+    hiddenPrevEl(currentEl)
+    return
+  }
+  update(id, newTitle).then(() => {
+    currentEl.previousElementSibling.querySelector('span').textContent = newTitle
+    visibleCurrentEl(currentEl)
+    hiddenPrevEl(currentEl)
+  })
+}
+
+function inputKeyup({ target, key }) {
+  if (key === 'Enter') {
+    const currentEl = target.closest('li')
+    const id = currentEl.querySelector('button').dataset.id
+    editTitle(id, currentEl)
+  }
+}
+
+function visibleCurrentEl(el) {
+  el.classList.add('d-none')
+}
+
+function hiddenNextEl(el) {
+  el.nextElementSibling.classList.remove('d-none')
+}
+function hiddenPrevEl(el) {
+  el.previousElementSibling.classList.remove('d-none')
+}
 
 async function remove(id) {
   await fetch(`/${id}`, {
@@ -33,5 +71,5 @@ async function update(id, title) {
     headers: {
       'Content-Type': 'application/json',
     },
-  });
+  })
 }
